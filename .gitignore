@@ -5,5 +5,11 @@ playwright-report/
 *.log
 *.tsbuildinfo
 *.zip
+dist-light/
+dist-pack/
+dist-pack-current.zip
+ui-custom-deploy.zip
+wildling-perch-dist.zip
+*.zip
 
 *.zip

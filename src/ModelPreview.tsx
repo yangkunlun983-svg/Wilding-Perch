@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import type { InstalledModuleKey, ModuleKey, PlankVariant, SkeletonKey } from './appTypes'
 
-const modelBase = '/design-assets/models'
+const modelBase = '/Wilding-Perch/design-assets/models'
 
 type ModelTransform = {
   center: THREE.Vector3

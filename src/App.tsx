@@ -5,7 +5,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import ModelPreview from './ModelPreview'
 import type { HouseType, InstalledModuleKey, ModuleKey, PlankVariant, Room, Screen, SkeletonKey } from './appTypes'
 
-const A = '/design-assets'
+const A = '/Wilding-Perch/design-assets'
 const ui = (name: string) => `${A}/ui/${name}`
 const render = (name: string) => `${A}/renders/${name}`
 

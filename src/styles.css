@@ -1,16 +1,16 @@
 @font-face {
   font-family: MitrLocal;
-  src: url('/design-assets/fonts/Mitr-Regular.ttf') format('truetype');
+  src: url('../design-assets/fonts/Mitr-Regular.ttf') format('truetype');
 }
 
 @font-face {
   font-family: MontagaLocal;
-  src: url('/design-assets/fonts/Montaga-Regular.ttf') format('truetype');
+  src: url('../design-assets/fonts/Montaga-Regular.ttf') format('truetype');
 }
 
 @font-face {
   font-family: MoulLocal;
-  src: url('/design-assets/fonts/Moul-Regular.ttf') format('truetype');
+  src: url('../design-assets/fonts/Moul-Regular.ttf') format('truetype');
 }
 
 :root {
@@ -75,7 +75,7 @@ img { display: block; max-width: 100%; }
   min-height: 680px;
   overflow: hidden;
   border-radius: 26px;
-  background: #fce7aa url('/design-assets/ui/纸板纹理.png') center / cover;
+  background: #fce7aa url('../design-assets/ui/纸板纹理.png') center / cover;
   box-shadow: 0 24px 70px rgba(69, 76, 48, .28);
 }
 
@@ -238,7 +238,7 @@ h2 {
   right: -265px;
   width: 560px;
   height: 430px;
-  background: url('/design-assets/ui/首页背景图.png') left center / contain no-repeat;
+  background: url('../design-assets/ui/首页背景图.png') left center / contain no-repeat;
   mix-blend-mode: multiply;
   opacity: .28;
   content: '';

@@ -179,6 +179,9 @@ h2 {
   cursor: pointer;
 }
 
+.text-action svg { width: 17px; height: 17px; }
+.primary-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--orange); color: white; }
+
 .bottom-tabs {
   position: absolute;
   z-index: 30;
@@ -211,7 +214,9 @@ h2 {
 .start-screen,
 .scan-screen,
 .analyze-screen,
+.result-screen,
 .check-screen,
+.fit-screen,
 .preset-screen,
 .configure-screen,
 .final-screen,
@@ -540,6 +545,28 @@ h2 {
 .ai-card strong { display: block; }
 .scan-panel > .asset-button { width: 132px; margin: 4px auto 0; }
 
+.scan-footer,
+.result-actions { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 18px; }
+.scan-footer .asset-button { width: 112px; }
+
+.result-screen,
+.fit-screen { padding: 82px 26px 40px; }
+.result-heading { text-align: center; color: var(--orange); }
+.result-heading > svg { width: 38px; height: 38px; }
+.result-heading h1,
+.fit-screen h1 { margin: 8px 0; font-size: 48px; }
+.result-heading p { margin: 0 0 18px; }
+.result-photo { width: 100%; height: 230px; object-fit: cover; border-radius: 28px; box-shadow: var(--soft-shadow); }
+.result-card { margin-top: -20px; border-radius: 34px; }
+.result-card strong { display: block; color: var(--orange); font-size: 22px; text-align: center; }
+.result-card p,
+.fit-screen .cream-panel p { color: #c97524; line-height: 1.4; }
+.result-card svg,
+.fit-screen .cream-panel svg { width: 16px; height: 16px; vertical-align: middle; }
+.result-actions .asset-button { width: 122px; }
+.fit-screen .cream-panel { margin: 44px 0 28px; border-radius: 34px; }
+.fit-screen > .asset-button { width: 120px; margin: auto; }
+
 .camera-state {
   position: absolute;
   left: 32px;
@@ -865,6 +892,9 @@ h2 {
   cursor: pointer;
 }
 
+.dependency-actions { display: flex; justify-content: center; gap: 10px; }
+.dependency-actions .text-action { background: rgba(255, 232, 145, .55); box-shadow: none; }
+
 .skeleton-choice {
   position: relative;
   display: grid;
@@ -993,6 +1023,12 @@ h2 {
   gap: 14px;
   margin-top: 18px;
 }
+
+.installed-list { display: grid; gap: 7px; margin-top: 16px; padding: 12px; border-radius: 18px; background: rgba(255, 255, 255, .48); }
+.installed-list > strong { color: var(--orange); font-size: 13px; }
+.installed-list button { display: flex; align-items: center; justify-content: space-between; min-height: 34px; padding: 0 10px; border: 0; border-radius: 16px; background: #ffe58a; color: var(--orange); cursor: pointer; }
+.installed-list button span { display: inline-flex; align-items: center; gap: 6px; }
+.installed-list svg { width: 15px; height: 15px; }
 
 .module-tools button {
   display: inline-flex;
@@ -1180,6 +1216,9 @@ h2 {
   text-align: center;
 }
 
+.save-success { flex-wrap: wrap; justify-content: center !important; }
+.save-success .save-toast { flex-basis: 100%; }
+
 .compare-screen {
   display: grid;
   align-content: center;
@@ -1205,6 +1244,10 @@ h2 {
   gap: 14px;
   width: 100%;
 }
+
+.discussion-list > button { padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; }
+.community-thread { position: absolute; z-index: 20; left: 26px; right: 26px; top: 220px; padding: 28px; border-radius: 28px; background: #fffce8; box-shadow: 0 20px 50px rgba(96, 68, 28, .28); color: #c97524; }
+.community-thread h2 { color: var(--orange); text-shadow: none; }
 
 .discussion-list article {
   padding: 18px 18px 16px;
@@ -1356,6 +1399,11 @@ h2 {
   font-size: 47px;
 }
 
+.case-options { position: absolute; left: 22px; right: 22px; bottom: 112px; display: grid; gap: 12px; }
+.case-options article { padding: 16px 18px; border-radius: 24px; background: rgba(255, 252, 232, .88); box-shadow: var(--soft-shadow); }
+.case-options h2 { margin-bottom: 7px; color: var(--orange); font-size: 22px; text-align: left; text-shadow: none; }
+.case-options p { margin-bottom: 10px; color: #c97524; font-size: 13px; }
+
 .case-panel {
   position: absolute;
   left: 22px;
@@ -1379,6 +1427,10 @@ h2 {
 .mine-screen h1 { text-align: center; }
 .mine-screen .cream-panel { margin-top: 50px; border-radius: 34px; }
 .mine-screen p { color: #d17f25; }
+.saved-preview { display: grid; gap: 6px; margin-top: 14px; padding: 14px; border-radius: 20px; background: rgba(255, 255, 255, .5); color: var(--orange); }
+.saved-preview p { margin: 0; }
+.saved-preview small { color: #a66b2c; }
+.saved-preview .text-action { justify-self: start; margin-top: 4px; }
 
 @media (max-width: 479px) {
   .desktop-stage { display: block; padding: 0; }

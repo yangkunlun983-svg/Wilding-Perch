@@ -1,4 +1,4 @@
-export type Screen = 'start' | 'scan' | 'analyze' | 'check' | 'preset' | 'configure' | 'final' | 'compare' | 'know' | 'watch' | 'mine'
+export type Screen = 'start' | 'scan' | 'analyze' | 'result' | 'check' | 'fit' | 'preset' | 'configure' | 'final' | 'compare' | 'know' | 'watch' | 'mine'
 export type HouseType = 'small_apartment' | 'apartment' | 'large_flat' | 'loft' | 'villa'
 export type ModuleKey = 'lever' | 'rings' | 'swing' | 'climbing wall' | 'shelf' | 'plank'
 export type SkeletonKey = 'standard' | 'luxury'
@@ -15,4 +15,13 @@ export type Room = {
   confidence: 'low' | 'medium' | 'high'
   notes: string[]
   warnings: string[]
+}
+
+export type SavedPreview = {
+  id: string
+  createdAt: string
+  room: Room
+  skeleton: SkeletonKey
+  modules: InstalledModuleKey[]
+  presetPreview: boolean
 }

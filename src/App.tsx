@@ -1,11 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Camera, Check, ChevronDown, ImagePlus, Lock, RotateCcw, Sparkles, Trash2, X } from 'lucide-react'
+import { Camera, Check, ChevronDown, ImagePlus, Lock, RotateCcw, Save, Sparkles, Trash2, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import ModelPreview from './ModelPreview'
-import type { HouseType, InstalledModuleKey, ModuleKey, PlankVariant, Room, Screen, SkeletonKey } from './appTypes'
+import type { HouseType, InstalledModuleKey, ModuleKey, PlankVariant, Room, SavedPreview, Screen, SkeletonKey } from './appTypes'
 
-const A = '/Wilding-Perch/design-assets'
+const A = `${import.meta.env.BASE_URL}design-assets`
 const ui = (name: string) => `${A}/ui/${name}`
 const render = (name: string) => `${A}/renders/${name}`
 
@@ -184,7 +184,7 @@ function ScreenShell({ children, screen, go, showNav = false }: { children: Reac
   return <div className="phone-canvas"><StatusBar />{children}{showNav && <BottomNav current={screen} go={go} />}</div>
 }
 
-function StartScreen({ go }: { go: (screen: Screen) => void }) {
+function StartScreen({ start, go }: { start: () => void, go: (screen: Screen) => void }) {
   const carouselRef = useRef<HTMLDivElement>(null)
   const [activeTile, setActiveTile] = useState<(typeof introTiles)[number] | undefined>()
   const loopTiles = [...introTiles, ...introTiles, ...introTiles]
@@ -206,7 +206,7 @@ function StartScreen({ go }: { go: (screen: Screen) => void }) {
         <img src={render('封面渲染图.png')} alt="Wildling Perch interior render" />
       </motion.div>
       <div className="brand-ghost">Wildling<br />Perch</div>
-      <motion.div className="start-cta" whileTap={{ scale: .94 }}><AssetButton image={ui('START按钮.png')} label="START" onClick={() => go('scan')} /></motion.div>
+      <motion.div className="start-cta" whileTap={{ scale: .94 }}><AssetButton image={ui('START按钮.png')} label="START" onClick={start} /></motion.div>
       <div className="tile-carousel" ref={carouselRef} aria-label="Intro cards">
         {loopTiles.map((tile, index) => <motion.button
           key={`${tile.title}-${index}`}
@@ -266,16 +266,10 @@ function InlineCameraPreview({ fallback, onCapture }: { fallback: string, onCapt
   </>
 }
 
-function ScanScreen({ room, setRoom, go }: { room: Room, setRoom: (room: Room) => void, go: (screen: Screen) => void }) {
+function ScanScreen({ room, setRoom, startAnalysis, go }: { room: Room, setRoom: (room: Room) => void, startAnalysis: (room: Room) => void, go: (screen: Screen) => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const fit = getFitSummary(room, 'standard')
-  const analyze = (payload: { name: string, size: number, image: string }) => {
-    go('analyze')
-    window.setTimeout(() => {
-      setRoom(analyzeRoomImage(payload.name, payload.size, payload.image))
-      go('check')
-    }, 1600)
-  }
+  const analyze = (payload: { name: string, size: number, image: string }) => startAnalysis(analyzeRoomImage(payload.name, payload.size, payload.image))
   const updateRoom = (patch: Partial<Room>) => setRoom({ ...room, ...patch })
   const readFile = (file?: File) => {
     if (!file || !file.type.startsWith('image/')) return
@@ -296,22 +290,36 @@ function ScanScreen({ room, setRoom, go }: { room: Room, setRoom: (room: Room) =
         <DimensionField label="height" value={room.height} min={220} max={420} onChange={(value) => updateRoom({ height: value })} />
         <label className="pill-select"><span>Common house types</span><select value={room.houseType} onChange={(event) => updateRoom({ houseType: event.target.value as HouseType })}><option value="small_apartment">small apartment</option><option value="apartment">apartment</option><option value="large_flat">large flat</option><option value="loft">loft</option><option value="villa">villa</option></select><ChevronDown /></label>
         <div className="ai-card"><Sparkles /><p><strong>AI estimate: {room.confidence} · {fit.score}%</strong>{room.estimatedHomeArea} sqm approx. {room.notes[0]} {fit.warnings[0]}</p></div>
-        <AssetButton image={ui('next.png')} label="next" onClick={() => go('check')} />
+        <div className="scan-footer"><BackButton onClick={() => go('start')} /><button className="text-action primary-action" onClick={() => startAnalysis({ ...room, confidence: room.image ? room.confidence : 'medium', notes: room.image ? room.notes : ['Manual dimensions confirmed for the fit check.'] })}><Sparkles /> Analyze room</button></div>
       </div>
     </section>
   </ScreenShell>
 }
 
-function AnalyzeScreen({ go }: { go: (screen: Screen) => void }) {
+function AnalyzeScreen({ complete }: { complete: () => void }) {
   const stages = ['detecting room edges', 'estimating clear size', 'checking house type', 'matching skeleton safety']
-  return <ScreenShell screen="analyze" go={go}>
+  useEffect(() => {
+    const timer = window.setTimeout(complete, 1600)
+    return () => window.clearTimeout(timer)
+  }, [complete])
+  return <ScreenShell screen="analyze" go={() => undefined}>
     <section className="analyze-screen">
       <motion.div className="scan-orbit" animate={{ rotate: 360 }} transition={{ duration: 1.6, repeat: Infinity, ease: 'linear' }}><Sparkles /></motion.div>
       <h1>AI check</h1>
       <div className="analyze-list">{stages.map((stage, i) => <motion.p key={stage} initial={{ opacity: .2, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * .28 }}><Check />{stage}</motion.p>)}</div>
-      <button className="skip-analysis" onClick={() => go('check')}>skip estimate</button>
+      <button className="skip-analysis" onClick={complete}>show results</button>
     </section>
   </ScreenShell>
+}
+
+function ResultScreen({ room, go }: { room: Room, go: (screen: Screen) => void }) {
+  const fit = getFitSummary(room, 'standard')
+  return <ScreenShell screen="result" go={go}><section className="result-screen">
+    <div className="result-heading"><Sparkles /><h1>Room result</h1><p>{room.confidence} confidence estimate</p></div>
+    {room.image && <img className="result-photo" src={room.image} alt="Analyzed room" />}
+    <div className="cream-panel result-card"><h2>{roomLabel(room.houseType)}</h2><strong>{room.length} × {room.width} × {room.height} cm</strong><p>About {room.estimatedHomeArea} sqm · Standard {fit.score}% match</p>{room.notes.map((note) => <p key={note}><Check /> {note}</p>)}{room.warnings.map((warning) => <p className="warning-line" key={warning}>{warning}</p>)}</div>
+    <div className="result-actions"><button className="text-action" onClick={() => go('scan')}>Edit room</button><AssetButton image={ui('next.png')} label="continue to skeletons" onClick={() => go('check')} /></div>
+  </section></ScreenShell>
 }
 
 function DimensionField({ label, value, min, max, onChange }: { label: string, value: number, min: number, max: number, onChange: (value: number) => void }) {
@@ -326,11 +334,15 @@ function CheckScreen({ room, selected, setSelected, go }: { room: Room, selected
   return <ScreenShell screen="check" go={go}>
     <section className="check-screen">
       <div className="floating-model"><ModelPreview skeleton={selected} modules={[]} /><h1>check!</h1></div>
-      <AssetButton image={ui('confirm.png')} label="Confirm" onClick={() => go('preset')} />
-      <div className="mini-actions"><AssetButton image={ui('specs.png')} label="Specs" onClick={() => go('know')} /><AssetButton image={ui('fit.png')} label="Fit" onClick={() => go('compare')} /><AssetButton image={ui('next.png')} label="next" onClick={() => go('preset')} /></div>
+      <div className="mini-actions"><AssetButton image={ui('specs.png')} label="Specs" onClick={() => go('know')} /><AssetButton image={ui('fit.png')} label="Fit details" onClick={() => go('fit')} /><AssetButton image={ui('next.png')} label="next" onClick={() => go('preset')} /></div>
       <div className="cream-panel"><h2>Select the skeleton you like</h2><SkeletonChoice id="standard" active={selected === 'standard'} unlocked score={standardFit.score} onClick={() => setSelected('standard')} note={standardFit.notes[2]} /><SkeletonChoice id="luxury" active={selected === 'luxury'} unlocked={luxury} score={luxuryFit.score} onClick={() => luxury && setSelected('luxury')} note={luxury ? luxuryFit.notes[2] : 'Recommended for 150 sqm+ homes or 450 x 350 cm clear rooms.'} /><div className="fit-notes">{getFitSummary(room, selected).warnings.map((warning) => <p key={warning}>{warning}</p>)}</div></div>
     </section>
   </ScreenShell>
+}
+
+function FitScreen({ room, selected, go }: { room: Room, selected: SkeletonKey, go: (screen: Screen) => void }) {
+  const fit = getFitSummary(room, selected)
+  return <ScreenShell screen="fit" go={go}><section className="fit-screen"><h1>Fit details</h1><div className="cream-panel"><h2>{selected} · {fit.score}%</h2><strong>{fit.label}</strong>{fit.notes.map((note) => <p key={note}><Check /> {note}</p>)}{fit.warnings.map((warning) => <p className="warning-line" key={warning}>{warning}</p>)}</div><BackButton onClick={() => go('check')} /></section></ScreenShell>
 }
 
 function SkeletonChoice({ id, active, unlocked, score, onClick, note }: { id: SkeletonKey, active: boolean, unlocked: boolean, score: number, onClick: () => void, note: string }) {
@@ -405,6 +417,7 @@ function ConfigureScreen({ selected, pickedModules, setPickedModules, go, goFina
     const next = key === 'plank' ? pickedModules.filter((item) => !isPlankModule(item)) : pickedModules.filter((item) => item !== key)
     setPickedModules(next)
   }
+  const removeInstalled = (key: InstalledModuleKey) => setPickedModules(pickedModules.filter((item) => item !== key))
   const chooseModule = (key: ModuleKey, alreadyPicked: boolean) => {
     if (key === 'plank') {
       setPlacementMessage('')
@@ -446,43 +459,44 @@ function ConfigureScreen({ selected, pickedModules, setPickedModules, go, goFina
         const allowed = isModuleAllowed(selected, item.key)
         const alreadyPicked = item.key === 'plank' ? pickedModules.some(isPlankModule) : pickedModules.includes(item.key)
         return <button key={item.key} disabled={!allowed} className={`${selectedModule === item.key || alreadyPicked ? 'picked' : ''} ${!allowed ? 'locked' : ''}`} onClick={() => chooseModule(item.key, alreadyPicked)} aria-label={allowed ? item.label : `${item.label} locked for standard`}><img src={item.icon} alt="" /><span>{item.label}</span>{alreadyPicked && <Check />}{!allowed && <Lock />}</button>
-      })}</div><div className="module-tools"><button onClick={() => setPickedModules(pickedModules.slice(0, -1))} disabled={!pickedModules.length}><RotateCcw /> undo</button><button onClick={() => setPickedModules([])} disabled={!pickedModules.length}><Trash2 /> clear</button></div><div className="panel-footer"><BackButton onClick={() => go('preset')} /><AssetButton image={ui('next.png')} label="final preview" onClick={goFinal} /></div></div>
+      })}</div>{pickedModules.length > 0 && <div className="installed-list"><strong>Installed</strong>{pickedModules.map((item) => <button key={item} onClick={() => removeInstalled(item)} aria-label={`remove ${moduleLabel(item)}`}><span><Check /> {moduleLabel(item)}</span><X /></button>)}</div>}<div className="module-tools"><button onClick={() => setPickedModules(pickedModules.slice(0, -1))} disabled={!pickedModules.length}><RotateCcw /> undo</button><button onClick={() => setPickedModules([])} disabled={!pickedModules.length}><Trash2 /> clear</button></div><div className="panel-footer"><BackButton onClick={() => go('preset')} /><AssetButton image={ui('next.png')} label="final preview" onClick={goFinal} disabled={!pickedModules.length} /></div></div>
       {dependencyPrompt && <div className="dependency-modal" role="dialog" aria-label="support point required">
         <div>
           <h2>Support point required</h2>
           <p>{dependencyPrompt} needs plank large first, because it provides the load-bearing support point for installation.</p>
-          <button onClick={startLargePlankPlacement}>place plank large</button>
+          <div className="dependency-actions"><button className="text-action" onClick={() => setDependencyPrompt(undefined)}>cancel</button><button onClick={startLargePlankPlacement}>install plank large</button></div>
         </div>
       </div>}
     </section>
   </ScreenShell>
 }
 
-function FinalScreen({ room, selected, pickedModules, presetPreview, go }: { room: Room, selected: SkeletonKey, pickedModules: InstalledModuleKey[], presetPreview: boolean, go: (screen: Screen) => void }) {
-  const [saved, setSaved] = useState(false)
+function FinalScreen({ room, selected, pickedModules, presetPreview, saved, savePreview, go }: { room: Room, selected: SkeletonKey, pickedModules: InstalledModuleKey[], presetPreview: boolean, saved: boolean, savePreview: () => void, go: (screen: Screen) => void }) {
   const fit = getFitSummary(room, selected)
   return <ScreenShell screen="final" go={go}>
     <section className="final-screen">
       <div className={`final-model ${presetPreview ? 'case-render' : ''}`}>{presetPreview ? <img src={presetImageFor(selected)} alt={`${selected} final case render`} /> : <ModelPreview skeleton={selected} modules={pickedModules} final />}<h1>preview</h1></div>
-      <div className="final-card"><h2>Final effect</h2><p>{selected} skeleton · {fit.score}% {fit.label}</p><p>{pickedModules.length || 0} modules: {pickedModules.map(moduleLabel).join(', ') || 'base frame'}</p><p>{room.length} x {room.width} x {room.height} cm · {room.estimatedHomeArea} sqm</p>{fit.warnings.map((warning) => <p className="warning-line" key={warning}>{warning}</p>)}<div className="final-actions"><BackButton onClick={() => go(presetPreview ? 'preset' : 'configure')} /><button className="text-action" onClick={() => go('start')}>home</button><AssetButton image={ui('next.png')} label="next" onClick={() => setSaved(true)} /></div>{saved && <p className="save-toast">Preview saved locally for this session.</p>}</div>
+      <div className="final-card"><h2>Final effect</h2><p>{selected} skeleton · {fit.score}% {fit.label}</p><p>{pickedModules.length || 0} modules: {pickedModules.map(moduleLabel).join(', ') || 'base frame'}</p><p>{room.length} x {room.width} x {room.height} cm · {room.estimatedHomeArea} sqm</p>{fit.warnings.map((warning) => <p className="warning-line" key={warning}>{warning}</p>)}<div className="final-actions"><BackButton onClick={() => go(presetPreview ? 'preset' : 'configure')} />{!saved && <button className="text-action primary-action" onClick={savePreview}><Save /> Save preview</button>}</div>{saved && <div className="save-success"><p className="save-toast">Preview saved to Mine.</p><button className="text-action" onClick={() => go('mine')}>View in Mine</button><button className="text-action" onClick={() => go('start')}>Back home</button></div>}</div>
     </section>
   </ScreenShell>
 }
 
 function CompareScreen({ go }: { go: (screen: Screen) => void }) {
-  return <ScreenShell screen="compare" go={go} showNav><section className="compare-screen community-screen"><h1>community</h1><div className="discussion-list"><article><strong>Parent setup notes</strong><p>Which module combo works best for a shared living room?</p><span>18 replies</span></article><article><strong>Safety check</strong><p>How do you confirm the wall fixing points before installing rings?</p><span>9 replies</span></article><article><strong>Room ideas</strong><p>Share your color, storage, and play-zone layout after preview.</p><span>24 replies</span></article></div><button className="text-action" onClick={() => go('start')}>home</button></section></ScreenShell>
+  const [active, setActive] = useState<string>()
+  const discussions = [{ title: 'Parent setup notes', body: 'Which module combo works best for a shared living room?', replies: 18 }, { title: 'Safety check', body: 'How do you confirm the wall fixing points before installing rings?', replies: 9 }, { title: 'Room ideas', body: 'Share your color, storage, and play-zone layout after preview.', replies: 24 }]
+  return <ScreenShell screen="compare" go={go} showNav><section className="compare-screen community-screen"><h1>community</h1><div className="discussion-list">{discussions.map((item) => <button key={item.title} onClick={() => setActive(item.title)}><article><strong>{item.title}</strong><p>{item.body}</p><span>{item.replies} replies · open thread</span></article></button>)}</div>{active && <div className="community-thread" role="dialog" aria-label={active}><button className="modal-close" onClick={() => setActive(undefined)} aria-label="close"><X /></button><h2>{active}</h2><p>This demo thread shows where comments, installation photos, and replies will live.</p></div>}</section></ScreenShell>
 }
 
-function KnowScreen({ go }: { go: (screen: Screen) => void }) {
-  return <ScreenShell screen="know" go={go}><section className="know-screen"><h1>Specs</h1><div className="spec-sheet"><img src={render('luxury-specs.png')} alt="Luxury frame specification drawing" /></div><div className="orange-band"><BackButton onClick={() => go('check')} /></div></section></ScreenShell>
+function KnowScreen({ selected, go }: { selected: SkeletonKey, go: (screen: Screen) => void }) {
+  return <ScreenShell screen="know" go={go}><section className="know-screen"><h1>{selected} Specs</h1><div className="spec-sheet"><img src={selected === 'luxury' ? render('luxury-specs.png') : render('封面渲染图.png')} alt={`${selected} frame specification`} /></div><div className="orange-band"><BackButton onClick={() => go('check')} /></div></section></ScreenShell>
 }
 
-function WatchScreen({ go }: { go: (screen: Screen) => void }) {
-  return <ScreenShell screen="watch" go={go} showNav><section className="watch-screen"><img src={render('效果预览图.png')} alt="presentation render" /><h1>cases</h1><div className="case-panel"><h2>Room-ready setups</h2><p>Compact apartment, open living room, and loft concepts are ready for comparison.</p></div><BackButton onClick={() => go('start')} /></section></ScreenShell>
+function WatchScreen({ useCase, go }: { useCase: (skeleton: SkeletonKey) => void, go: (screen: Screen) => void }) {
+  return <ScreenShell screen="watch" go={go} showNav><section className="watch-screen"><img src={render('效果预览图.png')} alt="presentation render" /><h1>cases</h1><div className="case-options"><article><h2>Compact Standard</h2><p>Standard frame with swing for smaller living rooms.</p><button className="text-action" onClick={() => useCase('standard')}>Use this setup</button></article><article><h2>Open-room Luxury</h2><p>Full prepared Luxury case with every compatible module.</p><button className="text-action" onClick={() => useCase('luxury')}>Use this setup</button></article></div></section></ScreenShell>
 }
 
-function MineScreen({ go }: { go: (screen: Screen) => void }) {
-  return <ScreenShell screen="mine" go={go} showNav><section className="mine-screen"><h1>Mine</h1><div className="cream-panel"><h2>Saved ideas</h2><p>Your saved preview stays on the final page in this demo. Use Mine to review the workflow checklist and next design pass.</p><p>Next: confirm measurements, review wall fixing, and choose modules.</p></div></section></ScreenShell>
+function MineScreen({ saved, resume, go }: { saved: SavedPreview[], resume: (item: SavedPreview) => void, go: (screen: Screen) => void }) {
+  return <ScreenShell screen="mine" go={go} showNav><section className="mine-screen"><h1>Mine</h1><div className="cream-panel"><h2>Saved ideas</h2>{saved.length === 0 ? <p>No saved previews yet. Finish a configuration and choose Save preview.</p> : saved.map((item) => <article className="saved-preview" key={item.id}><strong>{item.skeleton} · {item.modules.length} modules</strong><p>{item.room.length} × {item.room.width} × {item.room.height} cm</p><small>{new Date(item.createdAt).toLocaleString()}</small><button className="text-action" onClick={() => resume(item)}>Open preview</button></article>)}</div></section></ScreenShell>
 }
 
 export default function App() {
@@ -491,35 +505,77 @@ export default function App() {
   const [selected, setSelected] = useState<SkeletonKey>('standard')
   const [pickedModules, setPickedModules] = useState<InstalledModuleKey[]>([])
   const [presetPreview, setPresetPreview] = useState(false)
+  const [previewSaved, setPreviewSaved] = useState(false)
+  const [savedPreviews, setSavedPreviews] = useState<SavedPreview[]>(() => {
+    try { return JSON.parse(localStorage.getItem('wildling-perch-previews') || '[]') as SavedPreview[] } catch { return [] }
+  })
   useEffect(() => {
     setPickedModules((items) => items.filter((item) => isInstalledModuleAllowed(selected, item)))
   }, [selected])
   const go = (next: Screen) => setScreen(next)
+  const startNew = () => {
+    setPickedModules([])
+    setPresetPreview(false)
+    setPreviewSaved(false)
+    setScreen('scan')
+  }
+  const startAnalysis = (nextRoom: Room) => {
+    setRoom(nextRoom)
+    setScreen('analyze')
+  }
   const goManualConfigure = () => {
     setPresetPreview(false)
+    setPreviewSaved(false)
     setScreen('configure')
   }
   const goFinalManual = () => {
     setPresetPreview(false)
+    setPreviewSaved(false)
     setScreen('final')
   }
   const usePresetCase = () => {
     setPickedModules(presetModulesFor(selected))
     setPresetPreview(true)
+    setPreviewSaved(false)
+    setScreen('final')
+  }
+  const useLibraryCase = (skeleton: SkeletonKey) => {
+    setSelected(skeleton)
+    setPickedModules(presetModulesFor(skeleton))
+    setPresetPreview(true)
+    setPreviewSaved(false)
+    setScreen('final')
+  }
+  const savePreview = () => {
+    const { image: _image, ...savedRoom } = room
+    const item: SavedPreview = { id: `${Date.now()}`, createdAt: new Date().toISOString(), room: savedRoom, skeleton: selected, modules: pickedModules, presetPreview }
+    const next = [item, ...savedPreviews].slice(0, 12)
+    setSavedPreviews(next)
+    setPreviewSaved(true)
+    try { localStorage.setItem('wildling-perch-previews', JSON.stringify(next)) } catch { /* Keep the session save when storage is unavailable. */ }
+  }
+  const resumePreview = (item: SavedPreview) => {
+    setRoom(item.room)
+    setSelected(item.skeleton)
+    setPickedModules(item.modules)
+    setPresetPreview(item.presetPreview)
+    setPreviewSaved(true)
     setScreen('final')
   }
   const rendered = useMemo(() => {
-    if (screen === 'scan') return <ScanScreen room={room} setRoom={setRoom} go={go} />
-    if (screen === 'analyze') return <AnalyzeScreen go={go} />
+    if (screen === 'scan') return <ScanScreen room={room} setRoom={setRoom} startAnalysis={startAnalysis} go={go} />
+    if (screen === 'analyze') return <AnalyzeScreen complete={() => go('result')} />
+    if (screen === 'result') return <ResultScreen room={room} go={go} />
     if (screen === 'check') return <CheckScreen room={room} selected={selected} setSelected={setSelected} go={go} />
+    if (screen === 'fit') return <FitScreen room={room} selected={selected} go={go} />
     if (screen === 'preset') return <PresetScreen selected={selected} usePreset={usePresetCase} goManual={goManualConfigure} go={go} />
     if (screen === 'configure') return <ConfigureScreen selected={selected} pickedModules={pickedModules} setPickedModules={setPickedModules} go={go} goFinal={goFinalManual} />
-    if (screen === 'final') return <FinalScreen room={room} selected={selected} pickedModules={pickedModules} presetPreview={presetPreview} go={go} />
+    if (screen === 'final') return <FinalScreen room={room} selected={selected} pickedModules={pickedModules} presetPreview={presetPreview} saved={previewSaved} savePreview={savePreview} go={go} />
     if (screen === 'compare') return <CompareScreen go={go} />
-    if (screen === 'know') return <KnowScreen go={go} />
-    if (screen === 'watch') return <WatchScreen go={go} />
-    if (screen === 'mine') return <MineScreen go={go} />
-    return <StartScreen go={go} />
-  }, [screen, room, selected, pickedModules, presetPreview])
+    if (screen === 'know') return <KnowScreen selected={selected} go={go} />
+    if (screen === 'watch') return <WatchScreen useCase={useLibraryCase} go={go} />
+    if (screen === 'mine') return <MineScreen saved={savedPreviews} resume={resumePreview} go={go} />
+    return <StartScreen start={startNew} go={go} />
+  }, [screen, room, selected, pickedModules, presetPreview, savedPreviews, previewSaved])
   return <main className="desktop-stage"><AnimatePresence mode="wait"><motion.div key={screen} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: .24 }}>{rendered}</motion.div></AnimatePresence></main>
 }
